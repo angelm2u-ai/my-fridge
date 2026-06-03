@@ -41,6 +41,10 @@
             transform: translateY(-2px);
             border-color: #4E6E58;
         }
+
+        .tag-remove:hover {
+            color: #C68E8E;
+        }
     </style>
 </head>
 <body class="selection:bg-[#EAEFEA]">
@@ -77,17 +81,17 @@
                 <button onclick="selectPersona('daily')" id="btn-daily" class="scenario-card p-8 rounded-3xl bg-white border border-[#E6E1D8] text-left card-hover tab-active">
                     <span class="text-4xl block mb-4">🏠</span>
                     <h3 class="font-bold text-lg mb-1">主婦日常</h3>
-                    <p class="text-xs opacity-80 leading-relaxed">追求全家人的營養均衡，確保基礎食材如雞蛋、牛奶、鮮蔬維持在水位之上。</p>
+                    <p class="text-xs opacity-80 leading-relaxed">追求全家人的營養均衡，確保基礎食材維持在水位之上。</p>
                 </button>
                 <button onclick="selectPersona('fitness')" id="btn-fitness" class="scenario-card p-8 rounded-3xl bg-white border border-[#E6E1D8] text-left card-hover">
                     <span class="text-4xl block mb-4">💪</span>
                     <h3 class="font-bold text-lg mb-1">增肌減脂</h3>
-                    <p class="text-xs text-[#7A8A7E] leading-relaxed">以高蛋白質與低GI原型食物為核心，精準監控肉類與纖維存貨，拒絕精緻加工。</p>
+                    <p class="text-xs text-[#7A8A7E] leading-relaxed">以高蛋白質與原型食物為核心，精準監控肉類與纖維存貨。</p>
                 </button>
                 <button onclick="selectPersona('party')" id="btn-party" class="scenario-card p-8 rounded-3xl bg-white border border-[#E6E1D8] text-left card-hover">
                     <span class="text-4xl block mb-4">🥳</span>
                     <h3 class="font-bold text-lg mb-1">派對準備</h3>
-                    <p class="text-xs text-[#7A8A7E] leading-relaxed">歡聚好夥伴！自動權衡派對點心、酒精飲料與冷盤食材，迎接多位客人的挑戰。</p>
+                    <p class="text-xs text-[#7A8A7E] leading-relaxed">歡聚好夥伴！自動權衡派對點心、酒精飲料與冷盤食材。</p>
                 </button>
             </div>
         </section>
@@ -111,9 +115,13 @@
                         </div>
 
                         <div>
-                            <label class="block text-xs font-bold mb-3 text-[#4E6E58]">當前情境必備食材</label>
-                            <div id="persona-tags" class="flex flex-wrap gap-2">
-                                <!-- JS 動態渲染 -->
+                            <label class="block text-xs font-bold mb-3 text-[#4E6E58]">當前情境必備食材 (可增刪)</label>
+                            <div id="persona-tags" class="flex flex-wrap gap-2 mb-3">
+                                <!-- JS 動態渲染標籤 -->
+                            </div>
+                            <div class="flex gap-2">
+                                <input id="new-tag-input" type="text" placeholder="新增品項..." class="flex-1 bg-[#F8F7F2] border border-[#E6E1D8] rounded-xl px-3 py-2 text-xs outline-none focus:border-[#4E6E58]">
+                                <button onclick="addNewTag()" class="bg-[#4E6E58] text-white px-4 py-2 rounded-xl text-xs font-bold">加入</button>
                             </div>
                         </div>
                     </div>
@@ -221,7 +229,7 @@
             renderPersonaTags();
         };
 
-        // --- 交互邏輯 ---
+        // --- 交互邏輯：配置區 ---
         function selectPersona(p) {
             appState.currentPersona = p;
             
@@ -243,17 +251,43 @@
             document.getElementById('people-count').innerText = appState.peopleCount;
         }
 
+        // --- 必備食材標籤管理 ---
         function renderPersonaTags() {
             const container = document.getElementById('persona-tags');
             container.innerHTML = '';
-            appState.mustHaves[appState.currentPersona].forEach(item => {
+            const items = appState.mustHaves[appState.currentPersona];
+            
+            items.forEach((item, index) => {
                 const tag = document.createElement('div');
-                tag.className = "bg-[#F8F7F2] border border-[#E6E1D8] px-3 py-1.5 rounded-xl text-[10px] font-bold text-[#4E6E58]";
-                tag.innerText = item;
+                tag.className = "flex items-center gap-2 bg-[#F8F7F2] border border-[#E6E1D8] px-3 py-1.5 rounded-xl text-[10px] font-bold text-[#4E6E58]";
+                tag.innerHTML = `
+                    <span>${item}</span>
+                    <button onclick="removeTag(${index})" class="tag-remove text-[#A69C8E] transition-colors">✕</button>
+                `;
                 container.appendChild(tag);
             });
         }
 
+        function addNewTag() {
+            const input = document.getElementById('new-tag-input');
+            const val = input.value.trim();
+            if (val) {
+                if (!appState.mustHaves[appState.currentPersona].includes(val)) {
+                    appState.mustHaves[appState.currentPersona].push(val);
+                    renderPersonaTags();
+                    input.value = '';
+                } else {
+                    showToast("此項目已在清單中", "⚠️");
+                }
+            }
+        }
+
+        function removeTag(index) {
+            appState.mustHaves[appState.currentPersona].splice(index, 1);
+            renderPersonaTags();
+        }
+
+        // --- 影像處理 ---
         function handleImage(e) {
             const files = Array.from(e.target.files);
             const grid = document.getElementById('preview-grid');
@@ -276,7 +310,7 @@
         // --- 分析與渲染 ---
         function startAnalysis() {
             if (appState.images.length === 0) {
-                showToast("請先上傳冰箱照片", "📷");
+                showToast("請先上傳冰箱照片", "📸");
                 return;
             }
 
@@ -284,39 +318,41 @@
             document.getElementById('result-loading').classList.remove('hidden');
             document.getElementById('result-content').classList.add('hidden');
 
+            // 模擬 AI 分析過程
             setTimeout(() => {
-                const data = mockAnalysisData();
+                const data = generateDynamicAnalysis();
                 renderVisuals(data);
                 document.getElementById('result-loading').classList.add('hidden');
                 document.getElementById('result-content').classList.remove('hidden');
-                showToast("分析完成！已產出補貨建議", "✅");
+                showToast("分析完成！已根據當前情境產出建議", "✅");
             }, 1800);
         }
 
-        function mockAnalysisData() {
+        // 根據使用者自訂的標籤和人數生成分析數據
+        function generateDynamicAnalysis() {
+            const personaItems = appState.mustHaves[appState.currentPersona];
+            const people = appState.peopleCount;
+            
+            // 基礎均衡度 (隨情境變化)
             let balance = { protein: 25, veg: 30, carb: 35, other: 10 };
-            let shopping = [];
+            if (appState.currentPersona === 'fitness') balance = { protein: 50, veg: 35, carb: 10, other: 5 };
+            if (appState.currentPersona === 'party') balance = { protein: 15, veg: 15, carb: 20, other: 50 };
 
-            if (appState.currentPersona === 'daily') {
-                balance = { protein: 20, veg: 40, carb: 30, other: 10 };
-                shopping = [
-                    { name: "雞蛋", category: "蛋白質", urgent: 95, reason: `常備清單紅燈，針對 ${appState.peopleCount} 人日常需求量嚴重不足。` },
-                    { name: "全脂鮮乳", category: "乳製品", urgent: 75, reason: "掃描顯示瓶身容量低於 20%，建議盡快補貨。" },
-                    { name: "季節葉菜", category: "蔬菜", urgent: 60, reason: "保鮮室僅剩少量洋蔥，建議補充綠色纖維。" }
-                ];
-            } else if (appState.currentPersona === 'fitness') {
-                balance = { protein: 50, veg: 35, carb: 10, other: 5 };
-                shopping = [
-                    { name: "雞胸肉", category: "優質蛋白", urgent: 98, reason: `增肌情境核心，目前的份量不足以應付 ${appState.peopleCount} 人份的餐期。` },
-                    { name: "希臘優格", category: "蛋白質", urgent: 85, reason: "標籤辨識顯示已達有效期限臨界點，建議汰換更新。" }
-                ];
-            } else {
-                balance = { protein: 15, veg: 15, carb: 20, other: 50 };
-                shopping = [
-                    { name: "精釀啤酒 (12入)", category: "飲品", urgent: 100, reason: `針對 ${appState.peopleCount} 位客人的派對計畫，冰箱目前無存貨。` },
-                    { name: "起司拼盤", category: "零食", urgent: 90, reason: "派對必備提案，冷藏庫目前缺乏冷盤食材。" }
-                ];
-            }
+            // 根據「標籤清單」生成 3 個缺貨最嚴重的建議
+            const shopping = [];
+            const shuffled = [...personaItems].sort(() => 0.5 - Math.random());
+            const targetItems = shuffled.slice(0, 3);
+
+            targetItems.forEach((name, i) => {
+                const urgentScore = 70 + Math.floor(Math.random() * 30);
+                shopping.push({
+                    name: name,
+                    category: i === 0 ? "核心必備" : i === 1 ? "消耗品" : "生鮮",
+                    urgent: urgentScore,
+                    reason: `針對 ${people} 位使用者的「${document.getElementById('btn-'+appState.currentPersona).querySelector('h3').innerText}」情境，系統偵測此項存貨不足，急需補貨。`
+                });
+            });
+
             return { balance, shopping };
         }
 
@@ -403,7 +439,10 @@
 
         // --- LINE 複製功能 ---
         function copyToLINE() {
-            if (appState.shoppingItems.length === 0) return;
+            if (appState.shoppingItems.length === 0) {
+                showToast("請先執行 AI 分析以產出清單", "⚠️");
+                return;
+            }
 
             const personaMap = { daily: "🏠 主婦日常", fitness: "💪 增肌減脂", party: "🥳 派對準備" };
             const personaName = personaMap[appState.currentPersona];
@@ -417,7 +456,7 @@
             appState.shoppingItems.forEach((item) => {
                 const status = item.checked ? "✅ [已放入購物車]" : "🛒 [待採買]";
                 const urgencyEmoji = item.urgent > 80 ? "🔥" : "⏳";
-                const categoryEmoji = item.category.includes("蛋白") ? "🥩" : item.category.includes("蔬") ? "🥬" : "📦";
+                const categoryEmoji = "📦"; 
                 
                 text += `${status}\n`;
                 text += `${categoryEmoji} *${item.name}* (急迫性 ${urgencyEmoji}${item.urgent}%)\n`;
@@ -439,6 +478,13 @@
             toast.classList.remove('translate-y-20', 'opacity-0');
             setTimeout(() => toast.classList.add('translate-y-20', 'opacity-0'), 3000);
         }
+
+        // 支援 Enter 鍵新增標籤
+        document.getElementById('new-tag-input').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                addNewTag();
+            }
+        });
     </script>
 </body>
 </html>
