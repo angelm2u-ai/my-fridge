@@ -3,449 +3,393 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI 冰友 - 智能補貨系統</title>
-    <!-- Tailwind CSS CDN -->
+    <title>AI 冰友 - 您的生活提案補貨助手</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Chart.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=Lora:ital,wght@0,400;0,600;1,400&display=swap');
         
         body {
             font-family: 'Noto Sans TC', sans-serif;
-            background-color: #FAF8F5;
+            background-color: #FDFCFB;
+            color: #2C3E35;
         }
 
-        .serif-font {
-            font-family: 'Playfair Display', 'Noto Sans TC', serif;
-        }
-
-        /* 隱藏捲軸但保留功能 */
-        ::-webkit-scrollbar {
-            width: 4px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #FAF8F5;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #E6E1D8;
-            border-radius: 10px;
+        .serif-title {
+            font-family: 'Lora', 'Noto Sans TC', serif;
         }
 
         .chart-container {
             position: relative;
             width: 100%;
-            max-width: 400px;
-            margin-left: auto;
-            margin-right: auto;
-            height: 250px;
-            max-height: 300px;
+            max-width: 500px;
+            margin: 0 auto;
+            height: 280px;
+        }
+
+        .tab-active {
+            background-color: #4E6E58 !important;
+            color: white !important;
+            border-color: #4E6E58 !important;
+            box-shadow: 0 10px 15px -3px rgba(78, 110, 88, 0.2);
+        }
+
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        .card-hover:hover {
+            transform: translateY(-2px);
+            border-color: #4E6E58;
         }
     </style>
 </head>
-<!-- Chosen Palette: Warm Herbary (暖色系草本調) -->
-<!-- Application Structure Plan: 
-    1. 採用「雙欄式工作台」設計。左欄為輸入區（設定與拍照），右欄為輸出區（分析結果與清單）。
-    2. 流程設計：設定常備品 -> 拍攝多角度照片 -> AI 綜合分析 -> 生成互動採買清單。
-    3. 針對多圖功能，設計了網格預覽區，方便使用者確認是否有拍到所有角落。
-    4. 互動設計：採買清單支援實時勾選，並自動計算採買進度百分比，模擬真實超市購物的成就感。
--->
-<!-- Visualization & Content Choices: 
-    - [Detected Items] -> 標籤雲 (HTML/Tailwind) -> 讓用戶快速確認 AI 看到了什麼。
-    - [Category Analysis] -> Doughnut Chart (Chart.js) -> 分析目前冰箱存貨類別比例。
-    - [Shopping List] -> 帶狀態的互動卡片 -> 提供具體補貨原因，並支援點擊勾選。
-    - [Progress Bar] -> 動態 Progress -> 顯示採買完成度。
-    - CONFIRMATION: NO SVG graphics used. NO Mermaid JS used.
--->
+<body class="selection:bg-[#EAEFEA]">
 
-<body class="min-h-screen text-[#2C3E35] flex flex-col selection:bg-[#EAEFEA]">
-
-    <header class="border-b border-[#E6E1D8] bg-[#FAF8F5]/80 backdrop-blur-md sticky top-0 z-50">
+    <header class="bg-white/80 backdrop-blur-md sticky top-0 z-50 border-b border-[#E6E1D8]">
         <div class="max-w-6xl mx-auto px-6 h-20 flex items-center justify-between">
-            <div class="flex items-center gap-4">
-                <span class="text-3xl filter grayscale-[10%]">🥦</span>
+            <div class="flex items-center gap-3">
+                <span class="text-3xl">🥦</span>
                 <div>
-                    <h1 class="text-lg font-bold tracking-widest text-[#2C3E35] serif-font uppercase">REFRIGERATOR</h1>
-                    <p class="text-[11px] text-[#7A8A7E] tracking-wider font-light">智能多圖辨識 · 溫柔補貨生活提案</p>
+                    <h1 class="text-xl font-bold tracking-tight serif-title">AI 冰友</h1>
+                    <p class="text-[10px] text-[#8C9B8E] tracking-widest uppercase font-medium">Smart Fridge Life Planner</p>
                 </div>
             </div>
-            
-            <div class="flex items-center bg-[#F2EDE4] p-1 rounded-full border border-[#E6E1D8] text-[10px] sm:text-xs">
-                <button id="btn-mode-mock" onclick="switchMode('mock')" class="px-4 py-1.5 rounded-full font-medium tracking-wider transition-all bg-[#FAF8F5] text-[#2C3E35] shadow-sm">模擬模式</button>
-                <button id="btn-mode-real" onclick="switchMode('real')" class="px-4 py-1.5 rounded-full font-medium tracking-wider transition-all text-[#7A8A7E]">真實 API</button>
+            <div class="flex items-center gap-2 bg-[#F8F7F2] px-4 py-1.5 rounded-full border border-[#E6E1D8]">
+                <span class="relative flex h-2 w-2">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#4E6E58] opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-2 w-2 bg-[#4E6E58]"></span>
+                </span>
+                <span class="text-[11px] font-bold text-[#4E6E58]">生活提案模組已就緒</span>
             </div>
         </div>
     </header>
 
-    <main class="max-w-6xl mx-auto px-6 py-10 flex-1 w-full">
+    <main class="max-w-6xl mx-auto px-6 py-10">
         
-        <!-- API 設定區 -->
-        <div id="api-key-banner" class="hidden mb-10 bg-[#FAF3EB] border border-[#EBE0D0] p-6 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-6 transition-all">
-            <div class="flex items-start gap-4">
-                <span class="text-2xl mt-0.5">🔑</span>
-                <div>
-                    <h3 class="font-bold text-[#8C6D4F] text-sm tracking-wider">API 運作中</h3>
-                    <p class="text-xs text-[#9C8065] mt-1 font-light">請輸入 Google Gemini API Key 以啟動視覺分析功能。</p>
+        <!-- 生活提案情境選擇 -->
+        <section class="mb-12">
+            <div class="text-center mb-10">
+                <h2 class="text-2xl font-bold mb-2 serif-title">今天是什麼樣的生活提案？</h2>
+                <p class="text-sm text-[#7A8A7E]">選擇一個情境，讓 AI 冰友為您計算最精準的備餐需求。</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <button onclick="selectPersona('daily')" id="btn-daily" class="scenario-card p-8 rounded-3xl bg-white border border-[#E6E1D8] text-left card-hover tab-active">
+                    <span class="text-4xl block mb-4">🏠</span>
+                    <h3 class="font-bold text-lg mb-1">主婦日常</h3>
+                    <p class="text-xs opacity-80 leading-relaxed">追求全家人的營養均衡，確保基礎食材如雞蛋、牛奶、鮮蔬維持在水位之上。</p>
+                </button>
+                <button onclick="selectPersona('fitness')" id="btn-fitness" class="scenario-card p-8 rounded-3xl bg-white border border-[#E6E1D8] text-left card-hover">
+                    <span class="text-4xl block mb-4">💪</span>
+                    <h3 class="font-bold text-lg mb-1">增肌減脂</h3>
+                    <p class="text-xs text-[#7A8A7E] leading-relaxed">以高蛋白質與低GI原型食物為核心，精準監控肉類與纖維存貨，拒絕精緻加工。</p>
+                </button>
+                <button onclick="selectPersona('party')" id="btn-party" class="scenario-card p-8 rounded-3xl bg-white border border-[#E6E1D8] text-left card-hover">
+                    <span class="text-4xl block mb-4">🥳</span>
+                    <h3 class="font-bold text-lg mb-1">派對準備</h3>
+                    <p class="text-xs text-[#7A8A7E] leading-relaxed">歡聚好夥伴！自動權衡派對點心、酒精飲料與冷盤食材，迎接多位客人的挑戰。</p>
+                </button>
+            </div>
+        </section>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            <!-- 左欄：配置區 -->
+            <div class="lg:col-span-4 space-y-6">
+                <div class="bg-white p-6 rounded-3xl border border-[#E6E1D8] shadow-sm">
+                    <h3 class="text-[11px] font-bold uppercase tracking-[0.2em] text-[#8C9B8E] mb-6 flex items-center gap-2">
+                        <span>⚙️</span> 配置與人數
+                    </h3>
+                    
+                    <div class="space-y-6">
+                        <div>
+                            <label class="block text-xs font-bold mb-3 text-[#4E6E58]">預計備餐人數</label>
+                            <div class="flex items-center gap-4 bg-[#F8F7F2] p-2 rounded-2xl border border-[#E6E1D8]">
+                                <button onclick="updatePeople(-1)" class="w-12 h-12 rounded-xl bg-white flex items-center justify-center shadow-sm hover:bg-[#EAEFEA] transition-colors">-</button>
+                                <div class="flex-1 text-center font-bold text-xl"><span id="people-count">2</span> <span class="text-xs font-normal">人</span></div>
+                                <button onclick="updatePeople(1)" class="w-12 h-12 rounded-xl bg-white flex items-center justify-center shadow-sm hover:bg-[#EAEFEA] transition-colors">+</button>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold mb-3 text-[#4E6E58]">當前情境必備食材</label>
+                            <div id="persona-tags" class="flex flex-wrap gap-2">
+                                <!-- JS 動態渲染 -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-3xl border border-[#E6E1D8] shadow-sm">
+                    <h3 class="text-[11px] font-bold uppercase tracking-[0.2em] text-[#8C9B8E] mb-4 flex items-center gap-2">
+                        <span>📷</span> 冰箱視點上傳
+                    </h3>
+                    <div id="drop-zone" onclick="document.getElementById('file-input').click()" class="border-2 border-dashed border-[#E6E1D8] rounded-2xl p-10 text-center cursor-pointer hover:bg-[#F8F7F2] hover:border-[#4E6E58] transition-all">
+                        <input id="file-input" type="file" multiple class="hidden" onchange="handleImage(event)">
+                        <span class="text-4xl block mb-2">📸</span>
+                        <p class="text-xs font-bold">點擊上傳冰箱全景照</p>
+                        <p class="text-[10px] text-[#A69C8E] mt-1">AI 冰友將根據影像進行盤點</p>
+                    </div>
+                    <div id="preview-grid" class="grid grid-cols-3 gap-2 mt-4 hidden"></div>
+                    
+                    <button onclick="startAnalysis()" id="btn-scan" class="w-full mt-6 bg-[#2C3E35] text-white font-bold py-4 rounded-2xl hover:bg-[#3D5544] transition-all text-xs tracking-[0.3em] uppercase">
+                        開始智能生活分析
+                    </button>
                 </div>
             </div>
-            <input id="api-key-input" type="password" placeholder="貼上您的 Gemini API 金鑰" class="bg-white border border-[#E5DFD5] rounded-xl px-4 py-2.5 text-xs focus:ring-1 focus:ring-[#5F7D67] w-full md:w-64 outline-none">
-        </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
-            
-            <!-- 左欄：冰箱管理與照片輸入 -->
-            <div class="lg:col-span-5 flex flex-col gap-8">
-                
-                <section class="bg-white p-6 rounded-3xl border border-[#E6E1D8] shadow-sm">
-                    <h2 class="font-bold text-[#2C3E35] flex items-center gap-2 mb-2 tracking-widest text-sm uppercase">🛒 常備清單管理</h2>
-                    <p class="text-xs text-[#7A8A7E] mb-6 font-light leading-relaxed">設定您家中「絕對不能缺」的基礎食材，AI 將以此為基準為您進行比對與補貨提醒。</p>
+            <!-- 右欄：分析結果 -->
+            <div class="lg:col-span-8">
+                <div class="bg-white p-8 rounded-3xl border border-[#E6E1D8] shadow-sm min-h-[650px]">
                     
-                    <div id="must-have-tags" class="flex flex-wrap gap-2 mb-6"></div>
-
-                    <div class="flex gap-2">
-                        <input id="input-new-must-have" type="text" placeholder="新增常備（例如：起司）" class="flex-1 bg-[#FAF8F5] border border-[#E6E1D8] rounded-xl px-4 py-2.5 text-xs outline-none">
-                        <button onclick="addMustHaveItem()" class="bg-[#2C3E35] text-white px-5 py-2.5 rounded-xl text-xs tracking-widest uppercase hover:bg-[#4E6E58] transition-colors">新增</button>
-                    </div>
-                </section>
-
-                <section class="bg-white p-6 rounded-3xl border border-[#E6E1D8] shadow-sm">
-                    <h2 class="font-bold text-[#2C3E35] flex items-center gap-2 mb-2 tracking-widest text-sm uppercase">📷 多角度照片上傳</h2>
-                    <p class="text-xs text-[#7A8A7E] mb-6 font-light leading-relaxed">建議拍攝 1~4 張照片（包含冷藏、冷凍及門架），讓 AI 的偵測結果更準確、無死角。</p>
-
-                    <div id="drop-zone" onclick="document.getElementById('file-input').click()" class="border-2 border-dashed border-[#C5BDB0] rounded-2xl p-8 text-center cursor-pointer hover:border-[#5F7D67] hover:bg-[#FAF6F0] transition-all flex flex-col items-center">
-                        <input id="file-input" type="file" accept="image/*" class="hidden" multiple onchange="handleFileSelect(event)">
-                        <span class="text-4xl mb-3 opacity-60">📸</span>
-                        <p class="text-xs font-semibold text-[#2C3E35] tracking-wide">點擊或拖放照片到這裡</p>
-                        <p class="text-[10px] text-[#A69C8E] mt-1">支援同時選取多張 (上限 4 張)</p>
+                    <div id="result-empty" class="py-32 text-center opacity-30">
+                        <div class="text-6xl mb-6">🥙</div>
+                        <h3 class="font-bold text-sm tracking-widest">待分析資料</h3>
+                        <p class="text-xs mt-2">請於左側設定情境並上傳冰箱照片</p>
                     </div>
 
-                    <div id="preview-grid-container" class="hidden mt-6">
-                        <div class="flex justify-between items-center mb-3">
-                            <span class="text-[10px] font-bold text-[#7A8A7E] uppercase">待分析照片 (<span id="photo-count">0</span>/4)</span>
-                            <button onclick="clearAllImages()" class="text-[10px] text-red-400 hover:text-red-600">清除全部</button>
-                        </div>
-                        <div id="image-preview-grid" class="grid grid-cols-2 gap-2"></div>
+                    <div id="result-loading" class="hidden py-40 text-center">
+                        <div class="inline-block w-10 h-10 border-4 border-[#4E6E58] border-t-transparent rounded-full animate-spin mb-6"></div>
+                        <p class="text-xs font-bold tracking-widest text-[#4E6E58]">正在分析冰箱環境並媒合提案...</p>
                     </div>
 
-                    <button id="btn-start-scan" onclick="startFridgeScan()" class="w-full mt-6 bg-[#4E6E58] text-white font-bold py-4 rounded-2xl hover:bg-[#3D5544] transition-all shadow-md text-xs tracking-[0.2em] uppercase">開始 AI 冰箱健檢</button>
-                </section>
-            </div>
-
-            <!-- 右欄：分析報告 -->
-            <div class="lg:col-span-7">
-                <section class="bg-white p-8 rounded-3xl border border-[#E6E1D8] shadow-sm min-h-[600px] flex flex-col">
-                    <h2 class="font-bold text-[#2C3E35] flex items-center gap-2 mb-6 tracking-widest text-sm uppercase">📋 智能補貨報告書</h2>
-
-                    <div id="state-idle" class="flex-1 flex flex-col items-center justify-center text-center py-20 opacity-50">
-                        <span class="text-5xl mb-4">🧊</span>
-                        <h3 class="font-bold text-sm">尚未開始清點</h3>
-                        <p class="text-[11px] text-[#7A8A7E] mt-2 max-w-xs">請提供冰箱內部的照片，AI 檢查員將會在此為您產出詳盡的清點與採買建議。</p>
-                    </div>
-
-                    <div id="state-loading" class="hidden flex-1 flex flex-col items-center justify-center py-20">
-                        <div class="w-10 h-10 border-2 border-[#5F7D67] border-t-transparent rounded-full animate-spin mb-4"></div>
-                        <p id="loading-text" class="text-xs font-medium tracking-widest text-[#2C3E35]">正在交叉比對照片中的食材...</p>
-                    </div>
-
-                    <div id="state-results" class="hidden flex-1 flex flex-col">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
-                            <div>
-                                <h3 class="text-[10px] font-bold text-[#7A8A7E] tracking-widest uppercase mb-4">🔍 目前現有庫存</h3>
-                                <div id="result-detected-tags" class="flex flex-wrap gap-2"></div>
-                            </div>
-                            <div class="border-l border-[#F0EBE3] pl-0 md:pl-8">
-                                <h3 class="text-[10px] font-bold text-[#7A8A7E] tracking-widest uppercase mb-4 text-center">📊 存貨類別分佈</h3>
+                    <div id="result-content" class="hidden space-y-12">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div class="p-6 bg-[#F8F7F2] rounded-3xl border border-[#E6E1D8]">
+                                <h4 class="text-[11px] font-bold text-[#4E6E58] uppercase tracking-[0.15em] mb-4">🥗 冰箱均衡度分析</h4>
                                 <div class="chart-container">
-                                    <canvas id="inventoryChart"></canvas>
+                                    <canvas id="chart-balance"></canvas>
+                                </div>
+                            </div>
+
+                            <div class="p-6 bg-[#F8F7F2] rounded-3xl border border-[#E6E1D8]">
+                                <h4 class="text-[11px] font-bold text-[#4E6E58] uppercase tracking-[0.15em] mb-4">🚨 補貨急迫性 (AI 建議)</h4>
+                                <div class="chart-container">
+                                    <canvas id="chart-urgency"></canvas>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="flex-1">
-                            <div class="flex items-center justify-between mb-4 border-t border-[#F0EBE3] pt-8">
-                                <h3 class="text-[10px] font-bold text-[#7A8A7E] tracking-widest uppercase">🛒 建議補貨提案</h3>
-                                <button onclick="copyToClipboard()" class="text-[10px] text-[#4E6E58] font-bold uppercase hover:underline">複製清單至 LINE</button>
+                        <div>
+                            <div class="flex items-center justify-between mb-6">
+                                <h4 class="text-[11px] font-bold text-[#2C3E35] uppercase tracking-[0.15em]">🛒 智能採買清單</h4>
+                                <button onclick="copyToLINE()" class="text-[11px] bg-[#EAEFEA] text-[#4E6E58] px-4 py-1.5 rounded-full font-bold hover:bg-[#D1D9D1] transition-colors border border-[#D1D9D1]">
+                                    複製至 LINE (格式化)
+                                </button>
                             </div>
-                            <div id="shopping-list-items" class="space-y-3"></div>
+                            <div id="shopping-list" class="grid grid-cols-1 gap-3">
+                                <!-- 清單由 JS 生成 -->
+                            </div>
                         </div>
 
-                        <div class="mt-10 bg-[#FAF8F5] p-6 rounded-2xl border border-[#E6E1D8]">
-                            <div class="flex items-center justify-between text-xs font-bold mb-3">
-                                <span>本次採買進度</span>
-                                <span id="progress-text" class="text-[#4E6E58]">0 / 0</span>
+                        <div class="pt-8 border-t border-[#F0EBE3]">
+                            <div class="flex justify-between items-center mb-4 text-[10px] font-bold tracking-widest">
+                                <span>當前提案執行進度</span>
+                                <span id="progress-val" class="text-[#4E6E58]">0%</span>
                             </div>
-                            <div class="w-full bg-[#E6E1D8] h-1.5 rounded-full overflow-hidden">
-                                <div id="progress-bar" class="bg-[#4E6E58] h-full transition-all duration-500" style="width: 0%"></div>
+                            <div class="w-full bg-[#F0EBE3] h-1.5 rounded-full overflow-hidden">
+                                <div id="progress-bar" class="bg-[#4E6E58] h-full transition-all duration-1000" style="width: 0%"></div>
                             </div>
                         </div>
                     </div>
-                </section>
+                </div>
             </div>
         </div>
     </main>
 
-    <div id="toast" class="fixed bottom-8 right-8 translate-y-20 opacity-0 bg-[#2C3E35] text-white px-6 py-3 rounded-xl shadow-xl transition-all z-50 text-xs tracking-wider flex items-center gap-3">
+    <div id="toast" class="fixed bottom-8 left-1/2 -translate-x-1/2 bg-[#2C3E35] text-white px-8 py-3 rounded-xl shadow-2xl transition-all translate-y-20 opacity-0 z-[100] text-xs font-bold flex items-center gap-3">
         <span id="toast-icon">✨</span>
-        <span id="toast-message">訊息</span>
+        <span id="toast-msg">訊息已複製</span>
     </div>
 
     <script>
-        // --- 核心狀態管理 ---
+        // --- 核心狀態 ---
         let appState = {
-            mode: 'mock',
-            mustHaveItems: ["牛奶", "雞蛋", "青菜", "豆腐", "洋蔥", "雞胸肉", "豆漿", "起士"],
-            selectedImages: [],
-            shoppingItems: [],
-            inventoryChart: null
+            currentPersona: 'daily',
+            peopleCount: 2,
+            mustHaves: {
+                daily: ["雞蛋", "鮮奶", "當季蔬菜", "板豆腐", "洋蔥", "白米"],
+                fitness: ["雞胸肉", "水煮蛋", "地瓜", "西蘭花", "酪梨", "希臘優格"],
+                party: ["精釀啤酒", "氣泡飲", "切達起司", "綜合堅果", "火腿冷盤", "新鮮水果"]
+            },
+            images: [],
+            charts: { balance: null, urgency: null },
+            shoppingItems: []
         };
 
-        // --- 初始化 ---
-        window.onload = function() {
-            renderMustHaveTags();
+        // --- 初始化載入 ---
+        window.onload = () => {
+            renderPersonaTags();
         };
 
-        function switchMode(mode) {
-            appState.mode = mode;
-            const isMock = mode === 'mock';
-            document.getElementById('btn-mode-mock').className = isMock ? "px-4 py-1.5 rounded-full font-medium transition-all bg-[#FAF8F5] text-[#2C3E35] shadow-sm" : "px-4 py-1.5 rounded-full font-medium transition-all text-[#7A8A7E]";
-            document.getElementById('btn-mode-real').className = !isMock ? "px-4 py-1.5 rounded-full font-medium transition-all bg-[#FAF8F5] text-[#2C3E35] shadow-sm" : "px-4 py-1.5 rounded-full font-medium transition-all text-[#7A8A7E]";
-            document.getElementById('api-key-banner').classList.toggle('hidden', isMock);
-            showToast(isMock ? "已切換至模擬模式" : "已切換至 API 模式");
+        // --- 交互邏輯 ---
+        function selectPersona(p) {
+            appState.currentPersona = p;
+            
+            // 更新 UI 選卡狀態
+            document.querySelectorAll('.scenario-card').forEach(c => {
+                c.classList.remove('tab-active');
+                c.querySelector('p').classList.add('text-[#7A8A7E]');
+            });
+            const active = document.getElementById(`btn-${p}`);
+            active.classList.add('tab-active');
+            active.querySelector('p').classList.remove('text-[#7A8A7E]');
+            
+            renderPersonaTags();
+            showToast(`已切換至「${active.querySelector('h3').innerText}」提案`, "🏠");
         }
 
-        // --- 常備清單邏輯 ---
-        function renderMustHaveTags() {
-            const container = document.getElementById('must-have-tags');
+        function updatePeople(delta) {
+            appState.peopleCount = Math.max(1, Math.min(30, appState.peopleCount + delta));
+            document.getElementById('people-count').innerText = appState.peopleCount;
+        }
+
+        function renderPersonaTags() {
+            const container = document.getElementById('persona-tags');
             container.innerHTML = '';
-            appState.mustHaveItems.forEach((item, idx) => {
+            appState.mustHaves[appState.currentPersona].forEach(item => {
                 const tag = document.createElement('div');
-                tag.className = "flex items-center gap-2 bg-[#F2EDE4] text-[#2C3E35] text-[11px] font-medium px-3 py-1.5 rounded-lg border border-[#E6E1D8]";
-                tag.innerHTML = `<span>${item}</span><button onclick="removeMustHaveItem(${idx})" class="hover:text-red-500">✕</button>`;
+                tag.className = "bg-[#F8F7F2] border border-[#E6E1D8] px-3 py-1.5 rounded-xl text-[10px] font-bold text-[#4E6E58]";
+                tag.innerText = item;
                 container.appendChild(tag);
             });
         }
 
-        function addMustHaveItem() {
-            const input = document.getElementById('input-new-must-have');
-            const val = input.value.trim();
-            if (val && !appState.mustHaveItems.includes(val)) {
-                appState.mustHaveItems.push(val);
-                renderMustHaveTags();
-                input.value = '';
-                showToast("已新增常備項目");
-            }
-        }
-
-        function removeMustHaveItem(idx) {
-            appState.mustHaveItems.splice(idx, 1);
-            renderMustHaveTags();
-        }
-
-        // --- 多圖上傳處理 ---
-        function handleFileSelect(e) {
+        function handleImage(e) {
             const files = Array.from(e.target.files);
-            const remaining = 4 - appState.selectedImages.length;
-            if (remaining <= 0) {
-                showToast("最多僅支援 4 張照片", "⚠️");
-                return;
-            }
-
-            files.slice(0, remaining).forEach(file => {
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    appState.selectedImages.push(event.target.result);
-                    renderImagePreviews();
-                };
-                reader.readAsDataURL(file);
-            });
-        }
-
-        function renderImagePreviews() {
-            const grid = document.getElementById('image-preview-grid');
-            const container = document.getElementById('preview-grid-container');
-            const count = document.getElementById('photo-count');
-            
+            const grid = document.getElementById('preview-grid');
             grid.innerHTML = '';
-            count.textContent = appState.selectedImages.length;
-            container.classList.toggle('hidden', appState.selectedImages.length === 0);
-
-            appState.selectedImages.forEach((src, idx) => {
-                const div = document.createElement('div');
-                div.className = "relative group aspect-square rounded-xl overflow-hidden border border-[#E6E1D8]";
-                div.innerHTML = `
-                    <img src="${src}" class="w-full h-full object-cover">
-                    <button onclick="removeImage(${idx})" class="absolute top-1 right-1 bg-black/50 text-white w-6 h-6 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">✕</button>
-                `;
-                grid.appendChild(div);
+            grid.classList.remove('hidden');
+            
+            files.slice(0, 3).forEach(f => {
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    appState.images.push(ev.target.result);
+                    const div = document.createElement('div');
+                    div.className = "aspect-square rounded-xl border border-[#E6E1D8] overflow-hidden";
+                    div.innerHTML = `<img src="${ev.target.result}" class="w-full h-full object-cover">`;
+                    grid.appendChild(div);
+                };
+                reader.readAsDataURL(f);
             });
         }
 
-        function removeImage(idx) {
-            appState.selectedImages.splice(idx, 1);
-            renderImagePreviews();
-        }
-
-        function clearAllImages() {
-            appState.selectedImages = [];
-            renderImagePreviews();
-        }
-
-        // --- AI 掃描核心 ---
-        async function startFridgeScan() {
-            if (appState.selectedImages.length === 0) {
-                showToast("請提供至少一張照片", "⚠️");
+        // --- 分析與渲染 ---
+        function startAnalysis() {
+            if (appState.images.length === 0) {
+                showToast("請先上傳冰箱照片", "📷");
                 return;
             }
 
-            switchState('loading');
-            
-            if (appState.mode === 'mock') {
-                // 模擬模式
-                setTimeout(() => {
-                    const mockData = {
-                        detected_items: ["牛奶", "番茄", "半顆洋蔥", "一罐啤酒", "豆腐"],
-                        category_counts: { "乳製品": 1, "蔬菜": 2, "蛋白質": 1, "飲品": 1 },
-                        shopping_list: [
-                            { name: "雞蛋", category: "蛋白質", reason: "常備清單中缺少，蛋架為空" },
-                            { name: "雞胸肉", category: "蛋白質", reason: "冷凍庫未發現肉類存貨" },
-                            { name: "綠色葉菜", category: "蔬菜", reason: "保鮮格蔬菜量不足，建議補充" }
-                        ]
-                    };
-                    renderFinalResult(mockData);
-                    switchState('results');
-                    showToast("分析完成！", "🎉");
-                }, 2000);
+            document.getElementById('result-empty').classList.add('hidden');
+            document.getElementById('result-loading').classList.remove('hidden');
+            document.getElementById('result-content').classList.add('hidden');
+
+            setTimeout(() => {
+                const data = mockAnalysisData();
+                renderVisuals(data);
+                document.getElementById('result-loading').classList.add('hidden');
+                document.getElementById('result-content').classList.remove('hidden');
+                showToast("分析完成！已產出補貨建議", "✅");
+            }, 1800);
+        }
+
+        function mockAnalysisData() {
+            let balance = { protein: 25, veg: 30, carb: 35, other: 10 };
+            let shopping = [];
+
+            if (appState.currentPersona === 'daily') {
+                balance = { protein: 20, veg: 40, carb: 30, other: 10 };
+                shopping = [
+                    { name: "雞蛋", category: "蛋白質", urgent: 95, reason: `常備清單紅燈，針對 ${appState.peopleCount} 人日常需求量嚴重不足。` },
+                    { name: "全脂鮮乳", category: "乳製品", urgent: 75, reason: "掃描顯示瓶身容量低於 20%，建議盡快補貨。" },
+                    { name: "季節葉菜", category: "蔬菜", urgent: 60, reason: "保鮮室僅剩少量洋蔥，建議補充綠色纖維。" }
+                ];
+            } else if (appState.currentPersona === 'fitness') {
+                balance = { protein: 50, veg: 35, carb: 10, other: 5 };
+                shopping = [
+                    { name: "雞胸肉", category: "優質蛋白", urgent: 98, reason: `增肌情境核心，目前的份量不足以應付 ${appState.peopleCount} 人份的餐期。` },
+                    { name: "希臘優格", category: "蛋白質", urgent: 85, reason: "標籤辨識顯示已達有效期限臨界點，建議汰換更新。" }
+                ];
             } else {
-                // 真實 API 模式
-                const apiKey = document.getElementById('api-key-input').value.trim();
-                if (!apiKey) {
-                    switchState('idle');
-                    showToast("請輸入 API Key", "⚠️");
-                    return;
-                }
-                try {
-                    const result = await callGemini(apiKey, appState.selectedImages);
-                    renderFinalResult(result);
-                    switchState('results');
-                } catch (err) {
-                    console.error(err);
-                    switchState('idle');
-                    showToast("API 呼叫失敗，請檢查金鑰", "❌");
-                }
+                balance = { protein: 15, veg: 15, carb: 20, other: 50 };
+                shopping = [
+                    { name: "精釀啤酒 (12入)", category: "飲品", urgent: 100, reason: `針對 ${appState.peopleCount} 位客人的派對計畫，冰箱目前無存貨。` },
+                    { name: "起司拼盤", category: "零食", urgent: 90, reason: "派對必備提案，冷藏庫目前缺乏冷盤食材。" }
+                ];
             }
+            return { balance, shopping };
         }
 
-        async function callGemini(key, images) {
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`;
-            const promptText = `你是一位冰箱管理專家。請分析這 ${images.length} 張從不同角度拍攝的冰箱照片。
-            請列出：
-            1. 目前現有的食材清單。
-            2. 對比常備清單 [${appState.mustHaveItems.join(', ')}]，找出缺少的項目。
-            3. 基於現有食材，額外建議採買項目與原因。
-            4. 統計現有食材的類別分佈。
-            
-            請嚴格以 JSON 回傳：
-            {
-                "detected_items": ["品名1", "品名2"],
-                "category_counts": {"類別名": 數量},
-                "shopping_list": [{"name": "品名", "category": "類別", "reason": "原因"}]
-            }`;
-
-            const parts = [{ text: promptText }];
-            images.forEach(img => {
-                parts.push({
-                    inlineData: {
-                        mimeType: "image/jpeg",
-                        data: img.split(',')[1]
-                    }
-                });
-            });
-
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ contents: [{ parts }] })
-            });
-
-            const data = await response.json();
-            const text = data.candidates[0].content.parts[0].text;
-            return JSON.parse(text.replace(/```json|```/g, ''));
-        }
-
-        // --- 結果渲染與視覺化 ---
-        function renderFinalResult(data) {
-            // 標籤雲
-            const detectedTags = document.getElementById('result-detected-tags');
-            detectedTags.innerHTML = '';
-            data.detected_items.forEach(item => {
-                const span = document.createElement('span');
-                span.className = "bg-[#FAF8F5] text-[#2C3E35] border border-[#E6E1D8] px-3 py-1.5 rounded-lg text-xs font-medium";
-                span.textContent = item;
-                detectedTags.appendChild(span);
-            });
-
-            // 圓餅圖
-            renderChart(data.category_counts);
-
-            // 採買清單
-            appState.shoppingItems = data.shopping_list.map(item => ({ ...item, checked: false }));
-            renderShoppingList();
-        }
-
-        function renderChart(counts) {
-            const ctx = document.getElementById('inventoryChart').getContext('2d');
-            if (appState.inventoryChart) appState.inventoryChart.destroy();
-            
-            appState.inventoryChart = new Chart(ctx, {
+        function renderVisuals(data) {
+            // Doughnut Chart
+            const ctxB = document.getElementById('chart-balance').getContext('2d');
+            if (appState.charts.balance) appState.charts.balance.destroy();
+            appState.charts.balance = new Chart(ctxB, {
                 type: 'doughnut',
                 data: {
-                    labels: Object.keys(counts),
+                    labels: ['蛋白質', '蔬菜', '碳水', '其他'],
                     datasets: [{
-                        data: Object.values(counts),
-                        backgroundColor: ['#4E6E58', '#8C9B8E', '#D1D9D1', '#EAEFEA', '#BCC7BC'],
-                        borderWidth: 0,
-                        hoverOffset: 4
+                        data: Object.values(data.balance),
+                        backgroundColor: ['#4E6E58', '#8C9B8E', '#D1D9D1', '#F0EBE3'],
+                        borderWidth: 0
                     }]
                 },
                 options: {
                     maintainAspectRatio: false,
-                    plugins: {
-                        legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } }
-                    },
-                    cutout: '70%'
+                    cutout: '75%',
+                    plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } }
                 }
             });
+
+            // Bar Chart
+            const ctxU = document.getElementById('chart-urgency').getContext('2d');
+            if (appState.charts.urgency) appState.charts.urgency.destroy();
+            appState.charts.urgency = new Chart(ctxU, {
+                type: 'bar',
+                data: {
+                    labels: data.shopping.map(i => i.name),
+                    datasets: [{
+                        data: data.shopping.map(i => i.urgent),
+                        backgroundColor: data.shopping.map(i => i.urgent > 80 ? '#C68E8E' : '#4E6E58'),
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { x: { max: 100, display: false }, y: { grid: { display: false } } }
+                }
+            });
+
+            appState.shoppingItems = data.shopping.map(i => ({ ...i, checked: false }));
+            renderListUI();
         }
 
-        function renderShoppingList() {
-            const container = document.getElementById('shopping-list-items');
+        function renderListUI() {
+            const container = document.getElementById('shopping-list');
             container.innerHTML = '';
-            
             appState.shoppingItems.forEach((item, idx) => {
-                const div = document.createElement('div');
-                div.className = `p-4 rounded-2xl border transition-all cursor-pointer flex items-start gap-4 ${item.checked ? 'bg-[#F2EDE4]/50 border-[#E6E1D8] opacity-60' : 'bg-white border-[#E6E1D8] hover:border-[#5F7D67]'}`;
-                div.onclick = () => {
+                const card = document.createElement('div');
+                card.className = `p-5 rounded-2xl border transition-all cursor-pointer flex items-center gap-4 ${item.checked ? 'bg-[#F8F7F2] opacity-50 grayscale' : 'bg-white border-[#E6E1D8] hover:border-[#4E6E58]'}`;
+                card.onclick = () => {
                     item.checked = !item.checked;
-                    renderShoppingList();
+                    renderListUI();
                 };
-                
-                div.innerHTML = `
-                    <div class="mt-1">
-                        <div class="w-4 h-4 rounded border ${item.checked ? 'bg-[#4E6E58] border-[#4E6E58]' : 'border-[#C5BDB0]'} flex items-center justify-center">
-                            ${item.checked ? '<span class="text-white text-[10px]">✓</span>' : ''}
-                        </div>
+                card.innerHTML = `
+                    <div class="w-6 h-6 rounded-lg border-2 flex-shrink-0 ${item.checked ? 'bg-[#4E6E58] border-[#4E6E58]' : 'border-[#D1D9D1]'} flex items-center justify-center">
+                        ${item.checked ? '<span class="text-white text-xs">✓</span>' : ''}
                     </div>
                     <div class="flex-1">
                         <div class="flex items-center gap-2 mb-1">
-                            <span class="font-bold text-xs ${item.checked ? 'line-through' : ''}">${item.name}</span>
-                            <span class="text-[9px] font-bold px-2 py-0.5 rounded-full bg-[#EAEFEA] text-[#4E6E58] uppercase tracking-tighter">${item.category}</span>
+                            <span class="font-bold text-xs">${item.name}</span>
+                            <span class="text-[9px] px-2 py-0.5 rounded-full font-bold ${item.urgent > 80 ? 'bg-red-50 text-red-500' : 'bg-[#EAEFEA] text-[#4E6E58]'}">急迫性 ${item.urgent}%</span>
                         </div>
-                        <p class="text-[10px] text-[#7A8A7E] font-light">${item.reason}</p>
+                        <p class="text-[10px] text-[#8C9B8E] font-medium leading-relaxed">${item.reason}</p>
                     </div>
                 `;
-                container.appendChild(div);
+                container.appendChild(card);
             });
-
             updateProgress();
         }
 
@@ -453,37 +397,47 @@
             const total = appState.shoppingItems.length;
             const checked = appState.shoppingItems.filter(i => i.checked).length;
             const pct = total === 0 ? 0 : Math.round((checked / total) * 100);
-            
-            document.getElementById('progress-text').textContent = `${checked} / ${total}`;
+            document.getElementById('progress-val').innerText = `${pct}%`;
             document.getElementById('progress-bar').style.width = `${pct}%`;
         }
 
-        // --- 輔助工具 ---
-        function switchState(state) {
-            document.getElementById('state-idle').classList.add('hidden');
-            document.getElementById('state-loading').classList.add('hidden');
-            document.getElementById('state-results').classList.add('hidden');
-            document.getElementById(`state-${state}`).classList.remove('hidden');
+        // --- LINE 複製功能 ---
+        function copyToLINE() {
+            if (appState.shoppingItems.length === 0) return;
+
+            const personaMap = { daily: "🏠 主婦日常", fitness: "💪 增肌減脂", party: "🥳 派對準備" };
+            const personaName = personaMap[appState.currentPersona];
+            const people = appState.peopleCount;
+
+            let text = `🥦 *AI 冰友：生活提案採買清單* 🥦\n\n`;
+            text += `📍 提案情境：${personaName}\n`;
+            text += `👥 備餐人數：${people} 人份\n`;
+            text += `──────────────────\n\n`;
+
+            appState.shoppingItems.forEach((item) => {
+                const status = item.checked ? "✅ [已放入購物車]" : "🛒 [待採買]";
+                const urgencyEmoji = item.urgent > 80 ? "🔥" : "⏳";
+                const categoryEmoji = item.category.includes("蛋白") ? "🥩" : item.category.includes("蔬") ? "🥬" : "📦";
+                
+                text += `${status}\n`;
+                text += `${categoryEmoji} *${item.name}* (急迫性 ${urgencyEmoji}${item.urgent}%)\n`;
+                text += `💡 補貨原因：${item.reason}\n\n`;
+            });
+
+            text += `──────────────────\n`;
+            text += `✨ 由 AI 冰友為您智能分析 ✨`;
+
+            navigator.clipboard.writeText(text).then(() => {
+                showToast("清單已按 LINE 格式複製！", "💬");
+            });
         }
 
-        function showToast(msg, icon = "✨") {
+        function showToast(msg, icon) {
             const toast = document.getElementById('toast');
-            document.getElementById('toast-icon').textContent = icon;
-            document.getElementById('toast-message').textContent = msg;
+            document.getElementById('toast-msg').innerText = msg;
+            document.getElementById('toast-icon').innerText = icon || "✨";
             toast.classList.remove('translate-y-20', 'opacity-0');
             setTimeout(() => toast.classList.add('translate-y-20', 'opacity-0'), 3000);
-        }
-
-        function copyToClipboard() {
-            if (appState.shoppingItems.length === 0) return;
-            const text = "🥦 AI 冰箱採買清單：\n" + appState.shoppingItems.map(i => `${i.checked ? '✅' : '❌'} ${i.name} (${i.category}) - ${i.reason}`).join('\n');
-            const el = document.createElement('textarea');
-            el.value = text;
-            document.body.appendChild(el);
-            el.select();
-            document.execCommand('copy');
-            document.body.removeChild(el);
-            showToast("清單已複製！");
         }
     </script>
 </body>
